@@ -1,0 +1,193 @@
+create database bancario;
+
+use bancario;
+
+CREATE TABLE clientes (
+	cod_cli INT NOT NULL,
+	nome varchar (50) NOT NULL,
+        endereco varchar(50),
+        cidade varchar(50),
+	PRIMARY KEY (cod_cli)
+)
+;
+
+CREATE TABLE agencias (
+	cod_ag INT NOT NULL,
+	nome varchar (50) NOT NULL,
+	cidade varchar (50),
+	PRIMARY KEY (cod_ag)
+)
+;
+
+CREATE TABLE contas (
+	cod_ag INT NOT NULL,
+	n_conta INT NOT NULL,
+	cod_cli INT NOT NULL,
+	saldo FLOAT,
+	PRIMARY KEY (cod_ag, n_conta),
+	FOREIGN KEY (cod_cli) REFERENCES clientes(cod_cli),
+	FOREIGN KEY (cod_ag) REFERENCES agencias(cod_ag)
+)
+;
+
+CREATE TABLE emprestimos (
+	cod_ag INT NOT NULL,
+	n_empr INT NOT NULL,
+	cod_cli INT NOT NULL,
+	valor FLOAT,
+	PRIMARY KEY (cod_ag, n_empr),
+	FOREIGN KEY (cod_cli) REFERENCES clientes(cod_cli),
+	FOREIGN KEY (cod_ag) REFERENCES agencias(cod_ag),
+        check (valor>=0)
+)
+;
+
+insert into clientes values (1, 'Jefferson', 'R. 13 de maio, 5','Taguatinga')
+;
+insert into clientes values (2, 'José', 'Av. Brasil, 100','Samambaia')
+;
+insert into clientes values (3, 'Ana', 'R. X, 51','Taguatinga')
+;
+insert into clientes values (4, 'Rita', 'R. A, 131','Taguatinga')
+;
+insert into clientes values (5, 'Carlos', 'R. Z, 222','Gama')
+;
+insert into clientes values (6, 'Marcelo', 'Av. 500, 121','Samambaia')
+;
+insert into clientes values (7, 'Celina', 'Av. Brasil, 201','Gama')
+;
+insert into clientes values(8,'Marlon','QR 07 cj T','Candanga');
+
+insert into agencias values (10, 'Central', 'Gama')
+;
+insert into agencias values (52, 'Barão Geraldo', 'Gama')
+;
+insert into agencias values (34, 'Centro', 'Taguatinga')
+;
+
+insert into contas values (10, 12345, 5, 100.00)
+;
+insert into contas values (34, 43210, 7, 2000.00)
+;
+insert into contas values (52, 56789, 2, 100.00)
+;
+insert into contas values (52, 91011, 6, 500.00)
+;
+insert into contas values (10, 12131, 1, 3000.00)
+;
+insert into contas values(34,06803,8,10000.00);
+insert into contas values(10,06804,8,10000.00);
+
+
+insert into emprestimos values (10, 25, 1, 2000.00)
+;
+insert into emprestimos values (52, 315, 2, 20000.00)
+;
+insert into emprestimos values (34, 1021, 3, 10000.00)
+;
+insert into emprestimos values (52, 421, 4, 50000.00)
+;
+insert into emprestimos values (10, 26, 5, 30000.00)
+;
+insert into emprestimos values (52, 541, 1, 1000.00)
+;
+
+select nome, cidade
+from clientes
+where cidade in ('Gama','Taguatinga')
+order by nome asc;
+
+select distinct agencias.cod_ag, nome
+from agencias INNER JOIN emprestimos on  agencias.cod_ag = emprestimos.cod_ag
+where valor > 10000.00; 
+
+select nome
+from clientes INNER JOIN contas on clientes.cod_cli = contas.cod_cli
+where saldo > 1000.00;
+
+select nome
+from agencias inner join emprestimos on agencias.cod_ag = emprestimos.cod_ag
+where valor <= 10000.00;
+
+select distinct nome,endereco,cod_ag
+from clientes inner join contas on clientes.cod_cli = contas.cod_cli
+where cod_ag = 010 or cod_ag = 034
+union
+select distinct nome,endereco,cod_ag
+from clientes inner join contas on clientes.cod_cli = contas.cod_cli
+where cod_ag = 052;
+
+Select distinct nome, cidade
+From emprestimos, clientes
+Where cod_ag = 0052 and clientes.cod_cli = emprestimos.cod_cli
+UNION
+Select distinct nome, cidade
+From contas, clientes
+Where cod_ag = 0052 and clientes.cod_cli = contas.cod_cli
+order by nome asc;
+
+select distinct nome,cidade
+from clientes,emprestimos
+where cod_ag = 0052 and clientes.cod_cli = emprestimos.cod_cli and clientes.cod_cli in(Select distinct cod_cli From contas Where cod_ag = 0052 );
+
+Select nome
+From agencias
+Where cod_ag not in (Select cod_ag From emprestimos Where valor > 20000.00);
+
+Select distinct C.nome, C.endereco
+From clientes C, contas D
+Where C.cod_cli = D.cod_cli and C.cod_cli <> 5 and saldo > any (Select saldo From contas Where cod_cli = 5);
+
+Select distinct A.cod_ag, A.nome
+From agencias A, emprestimos E
+Where A.cog_ag = E.cod_ag and valor > all (Select valor From emprestimos Where cod_ag = 0052);
+
+select distinct nome,cidade,endereco
+from clientes C inner join contas D on C.cod_cli = D.cod_cli
+where saldo > 100;
+
+select distinct nome,cidade
+from agencias A inner join contas C on A.cod_ag = C.cod_ag
+where saldo > 100.00;
+
+select nome,sum(saldo)
+from clientes C inner join contas D on C.cod_cli = D.cod_cli
+group by nome;
+
+select count(*)
+from contas
+where saldo < 10;
+
+select cidade,avg(valor)
+from agencias A inner join emprestimos E on A.cod_ag = E.cod_ag
+group by cidade;
+
+select nome
+from agencias
+where cod_ag not in (select cod_ag from emprestimos);
+
+select nome
+from clientes
+where cod_cli not in(select cod_cli from emprestimos);
+
+select nome,count(*)
+from clientes C inner join contas A on C.cod_cli = A.cod_cli
+group by nome;
+
+select distinct nome
+from clientes C inner join contas D on C.cod_cli = D.cod_cli 
+where saldo >= all(select saldo from contas);
+
+select distinct nome
+from clientes C inner join contas D on C.cod_cli = D.cod_cli
+group by nome
+having sum(saldo) >= all(select sum(saldo) from contas group by cod_cli);
+
+
+
+
+ 
+
+
+
+
